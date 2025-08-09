@@ -1,0 +1,46 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    volumes:
+      - .:/app
+      - sqlite_data:/app/data
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-dev-key-change-in-production
+      - ALLOWED_HOSTS=*
+      - CORS_ALLOW_ALL_ORIGINS=True
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/admin/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000/api/v1
+      - REACT_APP_MEDIA_URL=http://localhost:8000/media/
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  sqlite_data:
+    driver: local
+  static_volume:
+    driver: local
+  media_volume:
+    driver: local
